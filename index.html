@@ -1,0 +1,1600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ShopBill Pro — Smart Billing System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --surface2: #18181f;
+    --surface3: #1e1e28;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --accent: #f0c040;
+    --accent2: #e8a020;
+    --accent-glow: rgba(240,192,64,0.15);
+    --green: #34d399;
+    --red: #f87171;
+    --blue: #60a5fa;
+    --text: #f0f0f5;
+    --text2: #9090a8;
+    --text3: #5050680;
+    --radius: 14px;
+    --radius-sm: 8px;
+    --shadow: 0 8px 32px rgba(0,0,0,0.4);
+    --shadow-lg: 0 20px 60px rgba(0,0,0,0.6);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Ambient background */
+  body::before {
+    content: '';
+    position: fixed;
+    top: -200px; left: -200px;
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(240,192,64,0.06) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* HEADER */
+  .header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 64px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(12px);
+  }
+
+  .logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1.3rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .logo-icon {
+    width: 34px; height: 34px;
+    background: var(--accent);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    color: #0a0a0f;
+  }
+
+  .logo span { color: var(--accent); }
+
+  .nav {
+    display: flex;
+    gap: 4px;
+  }
+
+  .nav-btn {
+    background: none;
+    border: none;
+    color: var(--text2);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem;
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-weight: 500;
+  }
+
+  .nav-btn:hover { background: var(--surface3); color: var(--text); }
+  .nav-btn.active { background: var(--accent-glow); color: var(--accent); border: 1px solid rgba(240,192,64,0.2); }
+
+  .settings-badge {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 0.78rem;
+    color: var(--text2);
+    cursor: pointer;
+    display: flex; align-items: center; gap: 6px;
+    transition: all 0.2s;
+  }
+  .settings-badge:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* MAIN LAYOUT */
+  .main { position: relative; z-index: 1; }
+
+  .page { display: none; padding: 28px 24px; max-width: 1200px; margin: 0 auto; }
+  .page.active { display: block; }
+
+  /* DASHBOARD */
+  .dash-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s, border-color 0.2s;
+  }
+
+  .stat-card:hover { transform: translateY(-2px); border-color: var(--border2); }
+
+  .stat-card::after {
+    content: '';
+    position: absolute;
+    bottom: 0; right: 0;
+    width: 80px; height: 80px;
+    border-radius: 50%;
+    opacity: 0.04;
+  }
+
+  .stat-card.yellow::after { background: var(--accent); }
+  .stat-card.green::after { background: var(--green); }
+  .stat-card.blue::after { background: var(--blue); }
+  .stat-card.red::after { background: var(--red); }
+
+  .stat-label {
+    font-size: 0.75rem;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 500;
+    margin-bottom: 12px;
+  }
+
+  .stat-value {
+    font-family: 'Syne', sans-serif;
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .stat-value.accent { color: var(--accent); }
+
+  .stat-sub { font-size: 0.78rem; color: var(--text2); margin-top: 6px; }
+
+  /* CHART */
+  .chart-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    margin-bottom: 24px;
+  }
+
+  .section-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 1.1rem;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .section-title .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+
+  .chart-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+    height: 120px;
+  }
+
+  .chart-bar-wrap {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    height: 100%;
+    justify-content: flex-end;
+  }
+
+  .chart-bar {
+    width: 100%;
+    background: linear-gradient(180deg, var(--accent) 0%, var(--accent2) 100%);
+    border-radius: 4px 4px 0 0;
+    min-height: 4px;
+    transition: height 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    position: relative;
+  }
+
+  .chart-bar:hover { opacity: 0.8; }
+
+  .chart-bar-label {
+    font-size: 0.65rem;
+    color: var(--text2);
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* BILLING FORM */
+  .billing-layout {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 24px;
+  }
+
+  @media (max-width: 900px) {
+    .billing-layout { grid-template-columns: 1fr; }
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+  }
+
+  .card-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* FORM ELEMENTS */
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+
+  .form-group.full { grid-column: 1/-1; }
+
+  label {
+    font-size: 0.78rem;
+    color: var(--text2);
+    font-weight: 500;
+    letter-spacing: 0.02em;
+  }
+
+  input, select {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    padding: 10px 14px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    width: 100%;
+  }
+
+  input:focus, select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+  }
+
+  input::placeholder { color: var(--text2); opacity: 0.5; }
+
+  /* PRODUCT ROWS */
+  .product-header {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 80px 36px;
+    gap: 8px;
+    padding: 0 0 8px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 10px;
+  }
+
+  .product-header span {
+    font-size: 0.72rem;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .product-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 80px 36px;
+    gap: 8px;
+    margin-bottom: 8px;
+    align-items: center;
+    animation: fadeSlideIn 0.25s ease;
+  }
+
+  @keyframes fadeSlideIn {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .product-total {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.85rem;
+    color: var(--accent);
+    text-align: right;
+    padding-right: 4px;
+  }
+
+  .btn-remove {
+    background: none;
+    border: 1px solid rgba(248, 113, 113, 0.2);
+    border-radius: 6px;
+    color: var(--red);
+    cursor: pointer;
+    font-size: 14px;
+    width: 36px; height: 36px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+  }
+
+  .btn-remove:hover { background: rgba(248,113,113,0.1); }
+
+  .btn-add-product {
+    background: var(--surface2);
+    border: 1px dashed var(--border2);
+    border-radius: var(--radius-sm);
+    color: var(--text2);
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem;
+    padding: 10px;
+    width: 100%;
+    margin-top: 8px;
+    transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+
+  .btn-add-product:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-glow); }
+
+  /* GST TOGGLE */
+  .gst-toggle-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px;
+    background: var(--surface2);
+    border-radius: var(--radius-sm);
+    margin-bottom: 12px;
+    cursor: pointer;
+  }
+
+  .toggle {
+    width: 42px; height: 24px;
+    background: var(--surface3);
+    border-radius: 12px;
+    position: relative;
+    transition: background 0.2s;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .toggle.on { background: var(--accent); border-color: var(--accent); }
+
+  .toggle::after {
+    content: '';
+    position: absolute;
+    top: 3px; left: 3px;
+    width: 16px; height: 16px;
+    background: white;
+    border-radius: 50%;
+    transition: transform 0.2s;
+  }
+
+  .toggle.on::after { transform: translateX(18px); }
+
+  /* TOTALS */
+  .totals-section {
+    border-top: 1px solid var(--border);
+    padding-top: 16px;
+    margin-top: 8px;
+  }
+
+  .total-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    font-size: 0.88rem;
+    color: var(--text2);
+  }
+
+  .total-row.grand {
+    font-size: 1.3rem;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    color: var(--text);
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+    margin-top: 6px;
+  }
+
+  .total-row.grand .amount { color: var(--accent); }
+
+  /* BUTTONS */
+  .btn {
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 500;
+    font-size: 0.9rem;
+    padding: 12px 20px;
+    transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #0a0a0f;
+    font-weight: 700;
+    width: 100%;
+    font-size: 1rem;
+    padding: 14px;
+  }
+
+  .btn-primary:hover { background: #f5d060; transform: translateY(-1px); box-shadow: 0 4px 20px rgba(240,192,64,0.3); }
+  .btn-primary:active { transform: translateY(0); }
+
+  .btn-secondary {
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    flex: 1;
+  }
+
+  .btn-secondary:hover { border-color: var(--border2); background: var(--surface3); }
+
+  .btn-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+  }
+
+  /* INVOICE PREVIEW */
+  .invoice-preview {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    position: sticky;
+    top: 88px;
+  }
+
+  .invoice-header-bar {
+    background: linear-gradient(135deg, #1a1a24, #22222e);
+    border-bottom: 1px solid var(--border);
+    padding: 20px 24px;
+  }
+
+  .invoice-preview-content {
+    padding: 24px;
+    font-size: 0.85rem;
+  }
+
+  #invoice-number-display {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--accent);
+    background: var(--accent-glow);
+    padding: 4px 10px;
+    border-radius: 20px;
+    display: inline-block;
+    margin-bottom: 12px;
+  }
+
+  .inv-shop-name {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1.2rem;
+  }
+
+  .inv-meta { color: var(--text2); font-size: 0.78rem; margin-top: 4px; }
+
+  .inv-divider {
+    border: none;
+    border-top: 1px dashed var(--border2);
+    margin: 14px 0;
+  }
+
+  .inv-customer { color: var(--text); font-weight: 500; }
+  .inv-mobile { color: var(--text2); font-size: 0.8rem; }
+
+  .inv-items-header {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    font-size: 0.72rem;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 6px;
+  }
+
+  .inv-item-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    padding: 5px 0;
+    font-size: 0.83rem;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+  }
+
+  .inv-item-row span:last-child {
+    text-align: right;
+    font-family: 'DM Mono', monospace;
+    color: var(--accent);
+  }
+
+  .inv-total-section { padding-top: 10px; }
+
+  .inv-total-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 3px 0;
+    font-size: 0.83rem;
+    color: var(--text2);
+  }
+
+  .inv-total-row.bold {
+    font-weight: 700;
+    color: var(--text);
+    font-size: 1rem;
+    font-family: 'Syne', sans-serif;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+    margin-top: 6px;
+  }
+
+  .inv-total-row.bold span:last-child { color: var(--accent); }
+
+  .inv-footer {
+    text-align: center;
+    color: var(--text2);
+    font-size: 0.75rem;
+    padding-top: 16px;
+    border-top: 1px dashed var(--border2);
+    margin-top: 16px;
+  }
+
+  /* BILLS TABLE */
+  .search-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .search-row input { flex: 1; }
+
+  .bills-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .bills-table th {
+    font-size: 0.72rem;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 10px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    font-weight: 500;
+  }
+
+  .bills-table td {
+    padding: 12px 14px;
+    font-size: 0.85rem;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+    vertical-align: middle;
+  }
+
+  .bills-table tr:hover td { background: var(--surface2); }
+
+  .badge {
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 0.72rem;
+    font-weight: 600;
+  }
+
+  .badge-green { background: rgba(52,211,153,0.1); color: var(--green); }
+  .badge-yellow { background: var(--accent-glow); color: var(--accent); }
+
+  .mono { font-family: 'DM Mono', monospace; }
+
+  .btn-view {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text2);
+    cursor: pointer;
+    font-size: 0.78rem;
+    padding: 5px 12px;
+    transition: all 0.2s;
+  }
+
+  .btn-view:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* MODAL */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(4px);
+    z-index: 200;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+
+  .modal-overlay.show { display: flex; }
+
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    max-width: 480px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: var(--shadow-lg);
+    animation: modalIn 0.2s ease;
+  }
+
+  @keyframes modalIn {
+    from { opacity: 0; transform: scale(0.96) translateY(10px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+  }
+
+  .modal-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .modal-header h3 {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+  }
+
+  .modal-close {
+    background: none;
+    border: none;
+    color: var(--text2);
+    cursor: pointer;
+    font-size: 20px;
+    padding: 4px;
+    transition: color 0.2s;
+  }
+
+  .modal-close:hover { color: var(--text); }
+
+  .modal-body { padding: 24px; }
+
+  /* SETTINGS */
+  .settings-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  /* TOAST */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-sm);
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.88rem;
+    box-shadow: var(--shadow-lg);
+    z-index: 300;
+    transform: translateY(80px);
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    max-width: 340px;
+  }
+
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.success { border-color: var(--green); }
+  .toast.error { border-color: var(--red); }
+  .toast .toast-icon { font-size: 18px; }
+
+  /* PRINT STYLES */
+  @media print {
+    body > * { display: none !important; }
+    .print-area { display: block !important; }
+
+    .print-area {
+      font-family: 'Courier New', monospace;
+      width: 80mm;
+      margin: 0 auto;
+      font-size: 11px;
+      color: #000;
+    }
+
+    .print-shop { text-align: center; font-weight: bold; font-size: 16px; margin-bottom: 4px; }
+    .print-line { border-top: 1px dashed #000; margin: 6px 0; }
+    .print-item { display: flex; justify-content: space-between; }
+    .print-total { font-weight: bold; font-size: 14px; }
+  }
+
+  .print-area { display: none; }
+
+  /* LOADING */
+  .spinner {
+    width: 18px; height: 18px;
+    border: 2px solid rgba(0,0,0,0.2);
+    border-top-color: #0a0a0f;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    display: inline-block;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text2);
+  }
+
+  .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+  .empty-state h3 { font-family: 'Syne', sans-serif; margin-bottom: 8px; color: var(--text); }
+
+  .gst-field { display: none; }
+  .gst-field.show { display: block; }
+
+  @media (max-width: 600px) {
+    .product-header { display: none; }
+    .product-row { grid-template-columns: 1fr 1fr; grid-template-rows: auto auto; gap: 6px; padding: 10px; background: var(--surface2); border-radius: 8px; margin-bottom: 8px; }
+    .product-row input:first-child { grid-column: 1/-1; }
+    .product-total { text-align: left; }
+    .form-row { grid-template-columns: 1fr; }
+    .nav { display: none; }
+    .header { flex-wrap: wrap; height: auto; padding: 12px; gap: 8px; }
+    .page { padding: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- PRINT AREA (hidden, only visible on print) -->
+<div class="print-area" id="print-area"></div>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="logo">
+    <div class="logo-icon">🧾</div>
+    Shop<span>Bill</span> Pro
+  </div>
+  <nav class="nav">
+    <button class="nav-btn active" onclick="showPage('dashboard')">📊 Dashboard</button>
+    <button class="nav-btn" onclick="showPage('billing')">➕ New Bill</button>
+    <button class="nav-btn" onclick="showPage('bills')">📋 Bills</button>
+  </nav>
+  <button class="settings-badge" onclick="openSettings()">⚙️ Settings</button>
+</header>
+
+<!-- MAIN -->
+<main class="main">
+
+  <!-- DASHBOARD PAGE -->
+  <div class="page active" id="page-dashboard">
+    <div class="dash-grid">
+      <div class="stat-card yellow">
+        <div class="stat-label">Today's Sales</div>
+        <div class="stat-value accent" id="today-sales">₹0</div>
+        <div class="stat-sub" id="today-bills-count">0 bills today</div>
+      </div>
+      <div class="stat-card green">
+        <div class="stat-label">All Time Sales</div>
+        <div class="stat-value" id="all-time-sales">₹0</div>
+        <div class="stat-sub" id="all-time-bills">0 total bills</div>
+      </div>
+      <div class="stat-card blue">
+        <div class="stat-label">Average Bill</div>
+        <div class="stat-value" id="avg-bill">₹0</div>
+        <div class="stat-sub">per transaction</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Quick Action</div>
+        <button class="btn btn-primary" style="margin-top:8px; font-size:0.85rem; padding:10px" onclick="showPage('billing')">➕ New Bill</button>
+      </div>
+    </div>
+
+    <div class="chart-section">
+      <div class="section-title"><div class="dot"></div> Sales — Last 7 Days</div>
+      <div class="chart-bars" id="chart-bars">
+        <div class="empty-state" style="width:100%">Loading chart...</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title"><div class="dot"></div> Recent Bills</div>
+      <div id="recent-bills-list">
+        <div class="empty-state"><div class="icon">📭</div><h3>No bills yet</h3><p>Create your first bill to see it here</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BILLING PAGE -->
+  <div class="page" id="page-billing">
+    <div class="billing-layout">
+      <div>
+        <!-- Customer Info -->
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-title">👤 Customer Details</div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Customer Name *</label>
+              <input type="text" id="customer-name" placeholder="Enter customer name"/>
+            </div>
+            <div class="form-group">
+              <label>Mobile Number</label>
+              <input type="tel" id="customer-mobile" placeholder="10-digit mobile"/>
+            </div>
+          </div>
+        </div>
+
+        <!-- Products -->
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-title">🛒 Products</div>
+          <div class="product-header">
+            <span>Product Name</span>
+            <span>Price (₹)</span>
+            <span>Qty</span>
+            <span style="text-align:right">Total</span>
+            <span></span>
+          </div>
+          <div id="products-container"></div>
+          <button class="btn-add-product" onclick="addProductRow()">
+            <span style="font-size:18px">+</span> Add Product
+          </button>
+        </div>
+
+        <!-- GST & Totals -->
+        <div class="card">
+          <div class="card-title">💰 Billing Summary</div>
+
+          <div class="gst-toggle-row" onclick="toggleGST()">
+            <div class="toggle" id="gst-toggle"></div>
+            <div>
+              <div style="font-size:0.88rem;font-weight:500">Enable GST</div>
+              <div style="font-size:0.75rem;color:var(--text2)">Add GST to the bill</div>
+            </div>
+          </div>
+
+          <div class="gst-field" id="gst-field">
+            <div class="form-group">
+              <label>GST Rate (%)</label>
+              <select id="gst-rate">
+                <option value="5">5%</option>
+                <option value="12">12%</option>
+                <option value="18" selected>18%</option>
+                <option value="28">28%</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="totals-section">
+            <div class="total-row"><span>Subtotal</span><span class="mono" id="subtotal-display">₹0.00</span></div>
+            <div class="total-row" id="gst-row" style="display:none"><span id="gst-label">GST (18%)</span><span class="mono" id="gst-amount-display">₹0.00</span></div>
+            <div class="total-row grand"><span>TOTAL</span><span class="amount mono" id="total-display">₹0.00</span></div>
+          </div>
+
+          <button class="btn btn-primary" style="margin-top:20px" onclick="generateBill()" id="generate-btn">
+            🧾 Generate Bill
+          </button>
+        </div>
+      </div>
+
+      <!-- Invoice Preview -->
+      <div class="invoice-preview">
+        <div class="invoice-header-bar">
+          <div class="section-title" style="margin:0; font-size:0.85rem">📄 Bill Preview</div>
+        </div>
+        <div class="invoice-preview-content" id="invoice-preview-content">
+          <div style="text-align:center; color:var(--text2); padding:40px 0">
+            <div style="font-size:40px;margin-bottom:12px">🧾</div>
+            <div>Fill in details to<br>preview the bill</div>
+          </div>
+        </div>
+        <div style="padding:0 24px 24px; display:flex; flex-direction:column; gap:8px" id="preview-actions" style="display:none">
+          <div id="preview-action-btns" style="display:none">
+            <div class="btn-row">
+              <button class="btn btn-secondary" onclick="printBill()">🖨️ Print</button>
+              <button class="btn btn-secondary" onclick="downloadPDF()">📥 PDF</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BILLS PAGE -->
+  <div class="page" id="page-bills">
+    <div class="card">
+      <div class="section-title"><div class="dot"></div> All Bills</div>
+      <div class="search-row">
+        <input type="text" id="search-input" placeholder="🔍  Search by name, mobile, or invoice..." oninput="searchBills()"/>
+        <input type="date" id="date-filter" onchange="searchBills()" style="max-width:160px"/>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="bills-table" id="bills-table">
+          <thead>
+            <tr>
+              <th>Invoice</th>
+              <th>Customer</th>
+              <th>Mobile</th>
+              <th>Items</th>
+              <th>Total</th>
+              <th>Date</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="bills-tbody">
+            <tr><td colspan="7"><div class="empty-state"><div class="icon">📭</div><h3>No bills found</h3></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- SETTINGS MODAL -->
+<div class="modal-overlay" id="settings-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>⚙️ Settings</h3>
+      <button class="modal-close" onclick="closeSettings()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="settings-form">
+        <div class="form-group">
+          <label>Shop Name</label>
+          <input type="text" id="s-shop-name" placeholder="My Shop"/>
+        </div>
+        <div class="form-group">
+          <label>Shop Address</label>
+          <input type="text" id="s-shop-address" placeholder="123 Main St, City"/>
+        </div>
+        <div class="form-group">
+          <label>Shop Phone</label>
+          <input type="text" id="s-shop-phone" placeholder="Phone number"/>
+        </div>
+        <div class="form-group">
+          <label>GSTIN (optional)</label>
+          <input type="text" id="s-gstin" placeholder="22AAAAA0000A1Z5"/>
+        </div>
+        <hr style="border-color:var(--border); margin:4px 0"/>
+        <div style="font-size:0.8rem;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.06em">Backend / API</div>
+        <div class="form-group">
+          <label>Backend URL</label>
+          <input type="text" id="s-backend-url" placeholder="http://localhost:3001"/>
+        </div>
+        <hr style="border-color:var(--border); margin:4px 0"/>
+        <div style="font-size:0.8rem;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.06em">🤖 Telegram Bot</div>
+        <div class="form-group">
+          <label>Bot Token</label>
+          <input type="text" id="s-telegram-token" placeholder="123456:ABC-DEF..."/>
+        </div>
+        <div class="form-group">
+          <label>Chat ID</label>
+          <input type="text" id="s-telegram-chat" placeholder="-1001234567890"/>
+        </div>
+        <button class="btn btn-primary" onclick="saveSettings()">💾 Save Settings</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- BILL VIEW MODAL -->
+<div class="modal-overlay" id="bill-view-modal">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-header">
+      <h3 id="modal-bill-title">Bill Details</h3>
+      <button class="modal-close" onclick="closeBillModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modal-bill-body"></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <span class="toast-icon" id="toast-icon"></span>
+  <span id="toast-msg"></span>
+</div>
+
+<script>
+// ========== STATE ==========
+let products = [];
+let gstEnabled = false;
+let currentBill = null;
+let settings = {};
+
+// ========== INIT ==========
+function init() {
+  loadSettings();
+  addProductRow();
+  updatePreview();
+  loadDashboard();
+  loadBillsTable();
+}
+
+// ========== SETTINGS ==========
+function loadSettings() {
+  settings = JSON.parse(localStorage.getItem('shopbill_settings') || '{}');
+  settings.shopName = settings.shopName || 'My Shop';
+  settings.shopAddress = settings.shopAddress || 'Your Address, City';
+  settings.shopPhone = settings.shopPhone || '';
+  settings.gstin = settings.gstin || '';
+  settings.backendUrl = settings.backendUrl || 'http://localhost:3001';
+  settings.telegramToken = settings.telegramToken || '';
+  settings.telegramChat = settings.telegramChat || '';
+}
+
+function openSettings() {
+  document.getElementById('s-shop-name').value = settings.shopName || '';
+  document.getElementById('s-shop-address').value = settings.shopAddress || '';
+  document.getElementById('s-shop-phone').value = settings.shopPhone || '';
+  document.getElementById('s-gstin').value = settings.gstin || '';
+  document.getElementById('s-backend-url').value = settings.backendUrl || '';
+  document.getElementById('s-telegram-token').value = settings.telegramToken || '';
+  document.getElementById('s-telegram-chat').value = settings.telegramChat || '';
+  document.getElementById('settings-modal').classList.add('show');
+}
+
+function closeSettings() { document.getElementById('settings-modal').classList.remove('show'); }
+
+function saveSettings() {
+  settings.shopName = document.getElementById('s-shop-name').value;
+  settings.shopAddress = document.getElementById('s-shop-address').value;
+  settings.shopPhone = document.getElementById('s-shop-phone').value;
+  settings.gstin = document.getElementById('s-gstin').value;
+  settings.backendUrl = document.getElementById('s-backend-url').value;
+  settings.telegramToken = document.getElementById('s-telegram-token').value;
+  settings.telegramChat = document.getElementById('s-telegram-chat').value;
+  localStorage.setItem('shopbill_settings', JSON.stringify(settings));
+  closeSettings();
+  showToast('✅', 'Settings saved!', 'success');
+  updatePreview();
+}
+
+// ========== NAVIGATION ==========
+function showPage(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  const btns = document.querySelectorAll('.nav-btn');
+  const map = { dashboard: 0, billing: 1, bills: 2 };
+  if (btns[map[page]]) btns[map[page]].classList.add('active');
+  if (page === 'dashboard') loadDashboard();
+  if (page === 'bills') loadBillsTable();
+}
+
+// ========== PRODUCTS ==========
+function addProductRow(name='', price='', qty=1) {
+  const id = Date.now();
+  products.push({ id, name, price, qty });
+  renderProducts();
+}
+
+function removeProduct(id) {
+  products = products.filter(p => p.id !== id);
+  renderProducts();
+  calcTotals();
+  updatePreview();
+}
+
+function renderProducts() {
+  const c = document.getElementById('products-container');
+  c.innerHTML = products.map(p => `
+    <div class="product-row" id="prow-${p.id}">
+      <input type="text" placeholder="Product name" value="${p.name}" oninput="updateProduct(${p.id}, 'name', this.value)" />
+      <input type="number" placeholder="0.00" value="${p.price || ''}" min="0" step="0.01" oninput="updateProduct(${p.id}, 'price', this.value)" />
+      <input type="number" placeholder="1" value="${p.qty}" min="1" oninput="updateProduct(${p.id}, 'qty', this.value)" />
+      <div class="product-total">₹${((+p.price||0)*(+p.qty||0)).toFixed(2)}</div>
+      <button class="btn-remove" onclick="removeProduct(${p.id})" title="Remove">✕</button>
+    </div>
+  `).join('');
+}
+
+function updateProduct(id, field, value) {
+  const p = products.find(x => x.id === id);
+  if (!p) return;
+  p[field] = value;
+  const row = document.getElementById('prow-' + id);
+  if (row) {
+    const totalEl = row.querySelector('.product-total');
+    if (totalEl) totalEl.textContent = '₹' + ((+p.price||0)*(+p.qty||1)).toFixed(2);
+  }
+  calcTotals();
+  updatePreview();
+}
+
+// ========== GST ==========
+function toggleGST() {
+  gstEnabled = !gstEnabled;
+  document.getElementById('gst-toggle').classList.toggle('on', gstEnabled);
+  document.getElementById('gst-field').classList.toggle('show', gstEnabled);
+  document.getElementById('gst-row').style.display = gstEnabled ? 'flex' : 'none';
+  calcTotals();
+  updatePreview();
+}
+
+// ========== TOTALS ==========
+function calcTotals() {
+  const subtotal = products.reduce((s, p) => s + (+p.price||0)*(+p.qty||1), 0);
+  const gstRate = +document.getElementById('gst-rate').value || 18;
+  const gstAmount = gstEnabled ? subtotal * gstRate / 100 : 0;
+  const total = subtotal + gstAmount;
+
+  document.getElementById('subtotal-display').textContent = '₹' + subtotal.toFixed(2);
+  document.getElementById('gst-label').textContent = 'GST (' + gstRate + '%)';
+  document.getElementById('gst-amount-display').textContent = '₹' + gstAmount.toFixed(2);
+  document.getElementById('total-display').textContent = '₹' + total.toFixed(2);
+
+  return { subtotal, gstRate, gstAmount, total };
+}
+
+// Listen to GST rate changes
+document.getElementById('gst-rate').addEventListener('change', () => { calcTotals(); updatePreview(); });
+document.getElementById('customer-name').addEventListener('input', updatePreview);
+document.getElementById('customer-mobile').addEventListener('input', updatePreview);
+
+// ========== PREVIEW ==========
+function updatePreview() {
+  const { subtotal, gstRate, gstAmount, total } = calcTotals();
+  const name = document.getElementById('customer-name').value || 'Customer';
+  const mobile = document.getElementById('customer-mobile').value || '';
+  const invoiceNum = currentBill ? currentBill.invoiceNumber : 'PREVIEW';
+  const now = new Date().toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
+
+  const itemRows = products.filter(p => p.name).map(p => `
+    <div class="inv-item-row">
+      <span>${p.name}</span>
+      <span>${p.qty} × ₹${(+p.price||0).toFixed(2)}</span>
+      <span>₹${((+p.price||0)*(+p.qty||1)).toFixed(2)}</span>
+    </div>
+  `).join('') || '<div style="color:var(--text2);font-size:0.8rem;padding:8px 0">No products added</div>';
+
+  const html = `
+    <div id="invoice-number-display">${invoiceNum}</div>
+    <div class="inv-shop-name">${settings.shopName || 'My Shop'}</div>
+    <div class="inv-meta">${settings.shopAddress || ''}</div>
+    ${settings.shopPhone ? `<div class="inv-meta">📞 ${settings.shopPhone}</div>` : ''}
+    ${settings.gstin ? `<div class="inv-meta">GSTIN: ${settings.gstin}</div>` : ''}
+    <hr class="inv-divider"/>
+    <div class="inv-customer">👤 ${name}</div>
+    ${mobile ? `<div class="inv-mobile">📱 ${mobile}</div>` : ''}
+    <div class="inv-meta" style="margin-top:4px">📅 ${now}</div>
+    <hr class="inv-divider"/>
+    <div class="inv-items-header"><span>Item</span><span>Qty×Rate</span><span style="text-align:right">Amount</span></div>
+    ${itemRows}
+    <div class="inv-total-section">
+      <div class="inv-total-row"><span>Subtotal</span><span>₹${subtotal.toFixed(2)}</span></div>
+      ${gstEnabled ? `<div class="inv-total-row"><span>GST (${gstRate}%)</span><span>₹${gstAmount.toFixed(2)}</span></div>` : ''}
+      <div class="inv-total-row bold"><span>TOTAL</span><span>₹${total.toFixed(2)}</span></div>
+    </div>
+    <div class="inv-footer">Thank you for your business! 🙏<br>Generated by ShopBill Pro</div>
+  `;
+
+  document.getElementById('invoice-preview-content').innerHTML = html;
+}
+
+// ========== GENERATE BILL ==========
+async function generateBill() {
+  const customerName = document.getElementById('customer-name').value.trim();
+  const customerMobile = document.getElementById('customer-mobile').value.trim();
+
+  if (!customerName) { showToast('⚠️', 'Please enter customer name', 'error'); return; }
+  if (!products.some(p => p.name && p.price)) { showToast('⚠️', 'Add at least one product', 'error'); return; }
+
+  const btn = document.getElementById('generate-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div> Generating...';
+
+  const { subtotal, gstRate, gstAmount, total } = calcTotals();
+
+  const payload = {
+    customerName,
+    customerMobile,
+    products: products.filter(p => p.name && p.price).map(p => ({ name: p.name, price: +p.price, qty: +p.qty || 1 })),
+    gstEnabled,
+    gstRate,
+    subtotal,
+    gstAmount,
+    total,
+    telegramToken: settings.telegramToken,
+    telegramChatId: settings.telegramChat
+  };
+
+  try {
+    const res = await fetch(settings.backendUrl + '/create-bill', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      currentBill = data.bill;
+      updatePreview();
+
+      const telegramMsg = data.telegramStatus === 'sent'
+        ? ' • Sent to Telegram ✅'
+        : data.telegramStatus === 'skipped' ? '' : ' • Telegram failed';
+
+      showToast('🧾', `Bill ${data.bill.invoiceNumber} created!${telegramMsg}`, 'success');
+
+      // Show action buttons
+      document.getElementById('preview-action-btns').style.display = 'block';
+
+      // Save to local bills cache
+      saveBillLocally(data.bill);
+    } else {
+      showToast('❌', 'Error: ' + data.error, 'error');
+    }
+  } catch (err) {
+    // Offline mode: generate locally
+    const counter = (+(localStorage.getItem('localCounter') || 1000)) + 1;
+    localStorage.setItem('localCounter', counter);
+    const invoiceNumber = `INV-${new Date().getFullYear()}-${String(counter).padStart(5, '0')}`;
+    currentBill = { ...payload, id: counter, invoiceNumber, createdAt: new Date().toISOString() };
+    saveBillLocally(currentBill);
+    updatePreview();
+    document.getElementById('preview-action-btns').style.display = 'block';
+    showToast('⚡', `Offline: ${invoiceNumber} saved locally`, 'success');
+
+    // Try Telegram directly from frontend
+    if (settings.telegramToken && settings.telegramChat) {
+      sendTelegramDirect(currentBill);
+    }
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '🧾 Generate Bill';
+}
+
+function saveBillLocally(bill) {
+  const bills = JSON.parse(localStorage.getItem('localBills') || '[]');
+  bills.unshift(bill);
+  localStorage.setItem('localBills', JSON.stringify(bills.slice(0, 500)));
+}
+
+// ========== TELEGRAM DIRECT (frontend fallback) ==========
+async function sendTelegramDirect(bill) {
+  if (!settings.telegramToken || !settings.telegramChat) return;
+  const lines = [
+    `🧾 NEW BILL GENERATED`,
+    `━━━━━━━━━━━━━━━━━━━━`,
+    `📋 Invoice: ${bill.invoiceNumber}`,
+    `👤 Customer: ${bill.customerName}`,
+    `📱 Mobile: ${bill.customerMobile || 'N/A'}`,
+    `━━━━━━━━━━━━━━━━━━━━`,
+    `🛒 ITEMS:`,
+    ...(bill.products||[]).map((p,i) => `${i+1}. ${p.name} — ${p.qty}×₹${p.price} = ₹${(p.qty*p.price).toFixed(2)}`),
+    `━━━━━━━━━━━━━━━━━━━━`,
+    `💰 Subtotal: ₹${bill.subtotal.toFixed(2)}`,
+    bill.gstEnabled ? `📊 GST (${bill.gstRate}%): ₹${bill.gstAmount.toFixed(2)}` : '',
+    `✅ TOTAL: ₹${bill.total.toFixed(2)}`,
+  ].filter(Boolean).join('\n');
+
+  try {
+    await fetch(`https://api.telegram.org/bot${settings.telegramToken}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: settings.telegramChat, text: lines })
+    });
+    showToast('📨', 'Sent to Telegram', 'success');
+  } catch (e) { console.log('Telegram error:', e); }
+}
+
+// ========== PRINT ==========
+function printBill() {
+  if (!currentBill) { showToast('⚠️', 'Generate a bill first', 'error'); return; }
+  const { subtotal, gstRate, gstAmount, total } = calcTotals();
+  const bill = currentBill;
+
+  document.getElementById('print-area').innerHTML = `
+    <div class="print-shop">${settings.shopName || 'My Shop'}</div>
+    <div style="text-align:center;font-size:10px">${settings.shopAddress || ''}</div>
+    ${settings.shopPhone ? `<div style="text-align:center;font-size:10px">${settings.shopPhone}</div>` : ''}
+    <div class="print-line"></div>
+    <div class="print-item"><span>Invoice:</span><span>${bill.invoiceNumber}</span></div>
+    <div class="print-item"><span>Date:</span><span>${new Date(bill.createdAt).toLocaleDateString('en-IN')}</span></div>
+    <div class="print-item"><span>Customer:</span><span>${bill.customerName}</span></div>
+    ${bill.customerMobile ? `<div class="print-item"><span>Mobile:</span><span>${bill.customerMobile}</span></div>` : ''}
+    <div class="print-line"></div>
+    <div class="print-item"><b>Item</b><b>Amt</b></div>
+    ${(bill.products||[]).map(p => `
+      <div>${p.name}</div>
+      <div class="print-item" style="padding-left:10px"><span>${p.qty} × ₹${p.price}</span><span>₹${(p.qty*p.price).toFixed(2)}</span></div>
+    `).join('')}
+    <div class="print-line"></div>
+    <div class="print-item"><span>Subtotal</span><span>₹${(bill.subtotal||subtotal).toFixed(2)}</span></div>
+    ${bill.gstEnabled ? `<div class="print-item"><span>GST (${bill.gstRate}%)</span><span>₹${(bill.gstAmount||gstAmount).toFixed(2)}</span></div>` : ''}
+    <div class="print-line"></div>
+    <div class="print-item print-total"><span>TOTAL</span><span>₹${(bill.total||total).toFixed(2)}</span></div>
+    <div class="print-line"></div>
+    <div style="text-align:center;margin-top:8px;font-size:10px">Thank you! Visit Again 🙏</div>
+  `;
+  window.print();
+}
+
+// ========== PDF ==========
+function downloadPDF(bill) {
+  const b = bill || currentBill;
+  if (!b) { showToast('⚠️', 'Generate a bill first', 'error'); return; }
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'mm', format: 'a5' });
+  const W = doc.internal.pageSize.width;
+
+  let y = 15;
+
+  // Header
+  doc.setFontSize(16); doc.setFont('helvetica', 'bold');
+  doc.text(settings.shopName || 'My Shop', W/2, y, { align: 'center' }); y += 6;
+  doc.setFontSize(9); doc.setFont('helvetica', 'normal');
+  doc.text(settings.shopAddress || '', W/2, y, { align: 'center' }); y += 5;
+  if (settings.shopPhone) { doc.text('Ph: ' + settings.shopPhone, W/2, y, { align: 'center' }); y += 5; }
+  if (settings.gstin) { doc.text('GSTIN: ' + settings.gstin, W/2, y, { align: 'center' }); y += 5; }
+
+  // Divider
+  y += 2; doc.setDrawColor(200); doc.line(10, y, W-10, y); y += 6;
+
+  // Invoice meta
+  doc.setFontSize(10); doc.setFont('helvetica', 'bold');
+  doc.text('Invoice: ' + b.invoiceNumber, 10, y);
+  doc.text('Date: ' + new Date(b.createdAt||Date.now()).toLocaleDateString('en-IN'), W-10, y, { align: 'right' }); y += 6;
+  doc.setFont('helvetica', 'normal');
+  doc.text('Customer: ' + b.customerName, 10, y); y += 5;
+  if (b.customerMobile) { doc.text('Mobile: ' + b.customerMobile, 10, y); y += 5; }
+
+  // Divider
+  y += 2; doc.line(10, y, W-10, y); y += 6;
+
+  // Items header
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(9);
+  doc.text('Item', 10, y); doc.text('Qty', 90, y); doc.text('Price', 115, y); doc.text('Total', W-10, y, { align: 'right' }); y += 5;
+  doc.line(10, y, W-10, y); y += 4;
+
+  // Items
+  doc.setFont('helvetica', 'normal');
+  (b.products||[]).forEach(p => {
+    doc.text(p.name.substring(0,30), 10, y);
+    doc.text(String(p.qty), 90, y);
+    doc.text('₹' + (+p.price).toFixed(2), 115, y);
+    doc.text('₹' + ((+p.price)*(+p.qty)).toFixed(2), W-10, y, { align: 'right' });
+    y += 5;
+  });
+
+  // Totals
+  y += 2; doc.line(10, y, W-10, y); y += 5;
+  doc.text('Subtotal:', W-50, y); doc.text('₹' + (+b.subtotal).toFixed(2), W-10, y, { align: 'right' }); y += 5;
+  if (b.gstEnabled) {
+    doc.text(`GST (${b.gstRate}%):`, W-50, y); doc.text('₹' + (+b.gstAmount).toFixed(2), W-10, y, { align: 'right' }); y += 5;
+  }
+  doc.line(10, y, W-10, y); y += 5;
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(11);
+  doc.text('TOTAL:', W-50, y); doc.text('₹' + (+b.total).toFixed(2), W-10, y, { align: 'right' }); y += 10;
+
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
+  doc.text('Thank you for your business!', W/2, y, { align: 'center' });
+
+  doc.save(`${b.invoiceNumber}.pdf`);
+  showToast('📥', 'PDF downloaded!', 'success');
+}
+
+// ========== DASHBOARD ==========
+async function loadDashboard() {
+  try {
+    const res = await fetch(settings.backendUrl + '/dashboard');
+    const data = await res.json();
+    if (data.success) renderDashboard(data);
+  } catch {
+    // Use local data
+    const bills = JSON.parse(localStorage.getItem('localBills') || '[]');
+    const today = new Date().toISOString().split('T')[0];
+    const todayBills = bills.filter(b => b.createdAt && b.createdAt.startsWith(today));
+    const totalSalesToday = todayBills.reduce((s, b) => s + (+b.total||0), 0);
+    const allTimeSales = bills.reduce((s, b) => s + (+b.total||0), 0);
+
+    const last7 = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(); d.setDate(d.getDate() - i);
+      const ds = d.toISOString().split('T')[0];
+      const dayBills = bills.filter(b => b.createdAt && b.createdAt.startsWith(ds));
+      last7.push({ date: ds, total: dayBills.reduce((s, b) => s + (+b.total||0), 0), count: dayBills.length });
+    }
+
+    renderDashboard({ totalSalesToday, totalBillsToday: todayBills.length, allTimeSales, totalBills: bills.length, last7 });
+  }
+}
+
+function renderDashboard(data) {
+  document.getElementById('today-sales').textContent = '₹' + (+data.totalSalesToday).toLocaleString('en-IN', {minimumFractionDigits:2});
+  document.getElementById('today-bills-count').textContent = data.totalBillsToday + ' bills today';
+  document.getElementById('all-time-sales').textContent = '₹' + (+data.allTimeSales).toLocaleString('en-IN', {minimumFractionDigits:2});
+  document.getElementById('all-time-bills').textContent = data.totalBills + ' total bills';
+  const avg = data.totalBills ? (+data.allTimeSales / data.totalBills) : 0;
+  document.getElementById('avg-bill').textContent = '₹' + avg.toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2});
+
+  // Chart
+  const maxVal = Math.max(...(data.last7||[]).map(d => d.total), 1);
+  const bars = (data.last7||[]).map(d => {
+    const pct = (d.total / maxVal * 100).toFixed(1);
+    const label = new Date(d.date).toLocaleDateString('en-IN', { weekday: 'short' });
+    return `
+      <div class="chart-bar-wrap" title="₹${d.total.toFixed(2)} | ${d.count} bills">
+        <div class="chart-bar" style="height:${Math.max(pct,3)}%"></div>
+        <div class="chart-bar-label">${label}</div>
+      </div>
+    `;
+  }).join('');
+  document.getElementById('chart-bars').innerHTML = bars || '<div style="color:var(--text2)">No data</div>';
+
+  // Recent bills
+  const bills = JSON.parse(localStorage.getItem('localBills') || '[]').slice(0, 5);
+  if (bills.length === 0) return;
+  const html = `<table class="bills-table"><thead><tr><th>Invoice</th><th>Customer</th><th>Total</th><th>Date</th><th></th></tr></thead><tbody>
+    ${bills.map(b => `<tr>
+      <td><span class="mono" style="color:var(--accent)">${b.invoiceNumber}</span></td>
+      <td>${b.customerName}</td>
+      <td class="mono">₹${(+b.total).toFixed(2)}</td>
+      <td style="color:var(--text2);font-size:0.8rem">${new Date(b.createdAt).toLocaleDateString('en-IN')}</td>
+      <td><button class="btn-view" onclick="viewBill(${JSON.stringify(b).replace(/"/g,'&quot;')})">View</button></td>
+    </tr>`).join('')}
+  </tbody></table>`;
+  document.getElementById('recent-bills-list').innerHTML = html;
+}
+
+// ========== BILLS TABLE ==========
+async function loadBillsTable(search='', date='') {
+  try {
+    let url = settings.backendUrl + '/bills?';
+    if (search) url += 'search=' + encodeURIComponent(search) + '&';
+    if (date) url += 'date=' + date;
+    const res = await fetch(url);
+    const data = await res.json();
+    if (data.success) renderBillsTable(data.bills);
+  } catch {
+    let bills = JSON.parse(localStorage.getItem('localBills') || '[]');
+    if (search) {
+      const q = search.toLowerCase();
+      bills = bills.filter(b => b.customerName?.toLowerCase().includes(q) || b.customerMobile?.includes(q) || b.invoiceNumber?.toLowerCase().includes(q));
+    }
+    if (date) bills = bills.filter(b => b.createdAt?.startsWith(date));
+    renderBillsTable(bills);
+  }
+}
+
+function renderBillsTable(bills) {
+  const tbody = document.getElementById('bills-tbody');
+  if (!bills.length) {
+    tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="icon">📭</div><h3>No bills found</h3></div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = bills.map(b => `
+    <tr>
+      <td><span class="mono" style="color:var(--accent)">${b.invoiceNumber}</span></td>
+      <td>${b.customerName}</td>
+      <td>${b.customerMobile||'—'}</td>
+      <td><span class="badge badge-yellow">${(b.products||[]).length} items</span></td>
+      <td class="mono">₹${(+b.total).toFixed(2)}</td>
+      <td style="color:var(--text2);font-size:0.8rem">${new Date(b.createdAt).toLocaleString('en-IN',{dateStyle:'short',timeStyle:'short'})}</td>
+      <td>
+        <div style="display:flex;gap:6px">
+          <button class="btn-view" onclick='viewBill(${JSON.stringify(b)})'>View</button>
+          <button class="btn-view" onclick='downloadPDF(${JSON.stringify(b)})' style="color:var(--accent)">PDF</button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function searchBills() {
+  const s = document.getElementById('search-input').value;
+  const d = document.getElementById('date-filter').value;
+  loadBillsTable(s, d);
+}
+
+// ========== VIEW BILL MODAL ==========
+function viewBill(bill) {
+  document.getElementById('modal-bill-title').textContent = bill.invoiceNumber;
+  const html = `
+    <div style="font-size:0.85rem">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+        <div><div style="color:var(--text2);font-size:0.72rem;text-transform:uppercase;margin-bottom:4px">Customer</div><div>${bill.customerName}</div></div>
+        <div><div style="color:var(--text2);font-size:0.72rem;text-transform:uppercase;margin-bottom:4px">Mobile</div><div>${bill.customerMobile||'—'}</div></div>
+        <div><div style="color:var(--text2);font-size:0.72rem;text-transform:uppercase;margin-bottom:4px">Date</div><div>${new Date(bill.createdAt).toLocaleString('en-IN')}</div></div>
+        <div><div style="color:var(--text2);font-size:0.72rem;text-transform:uppercase;margin-bottom:4px">Invoice</div><div style="color:var(--accent);font-family:'DM Mono',monospace">${bill.invoiceNumber}</div></div>
+      </div>
+      <hr style="border-color:var(--border);margin-bottom:12px"/>
+      <div class="inv-items-header"><span>Item</span><span>Qty×Rate</span><span style="text-align:right">Total</span></div>
+      ${(bill.products||[]).map(p => `
+        <div class="inv-item-row"><span>${p.name}</span><span>${p.qty}×₹${p.price}</span><span>₹${((+p.price)*(+p.qty)).toFixed(2)}</span></div>
+      `).join('')}
+      <hr style="border-color:var(--border);margin-top:12px;margin-bottom:12px"/>
+      <div class="inv-total-row"><span>Subtotal</span><span>₹${(+bill.subtotal).toFixed(2)}</span></div>
+      ${bill.gstEnabled ? `<div class="inv-total-row"><span>GST (${bill.gstRate}%)</span><span>₹${(+bill.gstAmount).toFixed(2)}</span></div>` : ''}
+      <div class="inv-total-row bold"><span>TOTAL</span><span style="color:var(--accent)">₹${(+bill.total).toFixed(2)}</span></div>
+    </div>
+    <div class="btn-row" style="margin-top:20px">
+      <button class="btn btn-secondary" onclick='downloadPDF(${JSON.stringify(bill)})'>📥 Download PDF</button>
+    </div>
+  `;
+  document.getElementById('modal-bill-body').innerHTML = html;
+  document.getElementById('bill-view-modal').classList.add('show');
+}
+
+function closeBillModal() { document.getElementById('bill-view-modal').classList.remove('show'); }
+
+// ========== TOAST ==========
+function showToast(icon, msg, type='') {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-icon').textContent = icon;
+  document.getElementById('toast-msg').textContent = msg;
+  t.className = 'toast ' + type + ' show';
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+// Close modals on overlay click
+document.querySelectorAll('.modal-overlay').forEach(o => {
+  o.addEventListener('click', e => { if (e.target === o) { o.classList.remove('show'); } });
+});
+
+// ========== START ==========
+init();
+</script>
+</body>
+</html>
