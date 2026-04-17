@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ShopBill Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:Poppins,sans-serif}
+body{background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);color:#fff;padding:20px}
+.container{max-width:500px;margin:auto}
+.card{background:rgba(255,255,255,0.05);padding:20px;border-radius:15px;margin-bottom:15px;backdrop-filter:blur(10px)}
+h1{text-align:center;margin-bottom:20px}
+input{width:100%;padding:10px;margin:5px 0;border:none;border-radius:8px;background:#1e293b;color:#fff}
+button{width:100%;padding:12px;margin-top:10px;border:none;border-radius:10px;background:#f59e0b;color:#000;font-weight:600;cursor:pointer;transition:0.3s}
+button:hover{background:#fbbf24}
+.product{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;margin-top:5px}
+.dashboard{display:flex;justify-content:space-between}
+.box{flex:1;background:rgba(255,255,255,0.1);margin:5px;padding:10px;border-radius:10px;text-align:center}
+</style>
+</head>
+<body>
+
+<div class="container">
+<h1>🧾 ShopBill Pro</h1>
+
+<div class="card">
+<input id="name" placeholder="Customer Name">
+<input id="mobile" placeholder="Mobile Number">
+</div>
+
+<div class="card">
+<button onclick="addProduct()">+ Add Product</button>
+<div id="products"></div>
+</div>
+
+<div class="card">
+<button onclick="generateBill()">Generate Bill</button>
+</div>
+
+<div class="card">
+<h3>📊 Dashboard</h3>
+<div class="dashboard">
+<div class="box">
+<p>Total Sales</p>
+<h2 id="sales">0</h2>
+</div>
+<div class="box">
+<p>Total Bills</p>
+<h2 id="bills">0</h2>
+</div>
+</div>
+<button onclick="loadDashboard()">Refresh</button>
+</div>
+
+</div>
+
+<script>
+const BACKEND_URL = "https://billing-web-n5zz.onrender.com";
+
+let products=[];
+
+function addProduct(){
+ let id=Date.now();
+ products.push({id,name:"",price:0,qty:1});
+ render();
+}
+
+function render(){
+ document.getElementById("products").innerHTML=products.map(p=>`
+  <div class="product">
+   <input placeholder="Name" oninput="update(${p.id},'name',this.value)">
+   <input type="number" placeholder="Price" oninput="update(${p.id},'price',this.value)">
+   <input type="number" value="1" oninput="update(${p.id},'qty',this.value)">
+  </div>
+ `).join('');
+}
+
+function update(id,f,v){let p=products.find(x=>x.id===id); if(p)p[f]=v;}
+
+async function generateBill(){
+ const payload={
+  customerName:document.getElementById("name").value,
+  customerMobile:document.getElementById("mobile").value,
+  products
+ };
+
+ const res=await fetch(BACKEND_URL+"/create-bill",{
+  method:"POST",
+  headers:{"Content-Type":"application/json"},
+  body:JSON.stringify(payload)
+ });
+
+ const data=await res.json();
+ alert(data.success?"✅ Bill Sent":"❌ Error");
+}
+
+async function loadDashboard(){
+ const res=await fetch(BACKEND_URL+"/dashboard");
+ const data=await res.json();
+
+ document.getElementById("sales").innerText=data.totalSales || 0;
+ document.getElementById("bills").innerText=data.totalBills || 0;
+}
+
+loadDashboard();
+</script>
+
+</body>
+</html>
